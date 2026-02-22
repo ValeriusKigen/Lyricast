@@ -420,10 +420,6 @@
       opacity: 1;
       transform: translateY(0);
     }
-    /* Fallback: show everything if JS fails */
-    @media (prefers-reduced-motion: reduce) {
-      .reveal { opacity: 1; transform: none; }
-    }
 
     /* ── Scrollbar ── */
     ::-webkit-scrollbar { width: 4px; }
@@ -573,10 +569,13 @@
   <footer>
     <div class="logo">Lyri<span>Cast</span></div>
     <div>Made with 🎵 — Lyrics powered by lrclib.net</div>
-    <div>© Valerius Kigen 2025 LyriCast</div>
+    <div style="text-align:center; line-height:1.8;">
+      © 2025 LyriCast &nbsp;·&nbsp; Built by Valerius Kigen<br>
+      <a href="mailto:valeriuskigen@gmail.com" style="color: var(--orange); text-decoration:none; font-size:11px; letter-spacing:1px;">valeriuskigen@gmail.com</a>
+    </div>
   </footer>
 
-  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+  <script>
     // ── Custom cursor ──
     const cursor = document.getElementById('cursor');
     const ring   = document.getElementById('cursorRing');
@@ -623,14 +622,9 @@
       entries.forEach(e => {
         if (e.isIntersecting) e.target.classList.add('visible');
       });
-    }, { threshold: 0.05, rootMargin: "0px 0px -50px 0px" });
+    }, { threshold: 0.15 });
 
     document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-
-    // Safety net: reveal all elements after 1.5s regardless
-    setTimeout(() => {
-      document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
-    }, 1500);
 
     // ── Animated demo lyrics ──
     const lyrics = [
@@ -656,4 +650,15 @@
         curr.textContent = lyrics[lyrIdx][1];
         next.textContent = lyrics[lyrIdx][2];
         prev.style.opacity = '1';
-        curr.style.
+        curr.style.opacity = '1';
+        next.style.opacity = '1';
+      }, 300);
+    }, 2800);
+
+    // Smooth opacity transitions on demo lines
+    [prev, curr, next].forEach(el => {
+      el.style.transition = 'opacity 0.3s ease';
+    });
+  </script>
+</body>
+</html>
