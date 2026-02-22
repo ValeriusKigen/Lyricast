@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LyriCast — Lyrics That Float</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --orange:     #FF6B1A;
+      --orange-dim: #cc4f08;
+      --orange-glow:#FF6B1A44;
+      --bg:         #080808;
+      --bg2:        #0f0f0f;
+      --bg3:        #161616;
+      --text:       #f0ede8;
+      --muted:      #6b6560;
+      --border:     #1f1f1f;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      overflow-x: hidden;
+      cursor: none;
+    }
+
+    /* ── Custom cursor ── */
+    .cursor {
+      position: fixed;
+      width: 10px; height: 10px;
+      background: var(--orange);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      transition: transform 0.1s;
+      mix-blend-mode: screen;
+    }
+    .cursor-ring {
+      position: fixed;
+      width: 36px; height: 36px;
+      border: 1px solid var(--orange);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9998;
+      opacity: 0.4;
+      transition: transform 0.15s, width 0.2s, height 0.2s, opacity 0.2s;
+    }
+
+    /* ── Noise overlay ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.5;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 60px;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.3s, background 0.3s;
+    }
+    nav.scrolled {
+      background: rgba(8,8,8,0.92);
+      backdrop-filter: blur(12px);
+      border-color: var(--border);
+    }
+    .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      letter-spacing: 3px;
+      color: var(--text);
+    }
+    .logo span { color: var(--orange); }
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    nav a:hover { color: var(--text); }
+    .nav-links { display: flex; gap: 36px; align-items: center; }
+    .nav-cta {
+      background: var(--orange) !important;
+      color: #000 !important;
+      padding: 10px 22px;
+      border-radius: 4px;
+      font-weight: 500 !important;
+      transition: background 0.2s, transform 0.1s !important;
+    }
+    .nav-cta:hover { background: #ff8c4a !important; transform: translateY(-1px); }
+
+    /* ── Hero ── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 120px 40px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Radial glow behind hero */
+    .hero::after {
+      content: '';
+      position: absolute;
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, var(--orange-glow) 0%, transparent 70%);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -60%);
+      pointer-events: none;
+      animation: pulse 4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.6; transform: translate(-50%, -60%) scale(1); }
+      50%       { opacity: 1;   transform: translate(-50%, -60%) scale(1.08); }
+    }
+
+    .hero-tag {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--orange);
+      margin-bottom: 28px;
+      opacity: 0;
+      animation: fadeUp 0.8s 0.2s forwards;
+    }
+
+    .hero h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(80px, 14vw, 180px);
+      line-height: 0.9;
+      letter-spacing: 4px;
+      color: var(--text);
+      opacity: 0;
+      animation: fadeUp 0.8s 0.4s forwards;
+    }
+    .hero h1 em {
+      font-style: normal;
+      color: var(--orange);
+      display: block;
+    }
+
+    .hero-sub {
+      max-width: 480px;
+      font-size: 17px;
+      line-height: 1.7;
+      color: var(--muted);
+      margin-top: 28px;
+      opacity: 0;
+      animation: fadeUp 0.8s 0.6s forwards;
+    }
+    .hero-sub strong { color: var(--text); font-weight: 400; }
+
+    .hero-actions {
+      display: flex;
+      gap: 16px;
+      margin-top: 48px;
+      opacity: 0;
+      animation: fadeUp 0.8s 0.8s forwards;
+    }
+
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: var(--orange);
+      color: #000;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      padding: 16px 32px;
+      border-radius: 6px;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 0 30px var(--orange-glow);
+    }
+    .btn-primary:hover {
+      background: #ff8c4a;
+      transform: translateY(-2px);
+      box-shadow: 0 0 50px var(--orange-glow);
+    }
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 15px;
+      padding: 16px 28px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      text-decoration: none;
+      transition: color 0.2s, border-color 0.2s, transform 0.15s;
+    }
+    .btn-secondary:hover {
+      color: var(--text);
+      border-color: #333;
+      transform: translateY(-2px);
+    }
+
+    /* ── Floating lyrics demo ── */
+    .demo-bar {
+      margin-top: 72px;
+      position: relative;
+      opacity: 0;
+      animation: fadeUp 0.8s 1s forwards;
+    }
+    .demo-bar-inner {
+      background: rgba(13,13,13,0.9);
+      border: 1px solid #222;
+      border-radius: 12px;
+      padding: 18px 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 8px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,107,26,0.08);
+      min-width: 600px;
+    }
+    .demo-line { font-size: 13px; color: #444; font-family: 'DM Sans'; transition: all 0.5s; }
+    .demo-line.active { font-size: 20px; color: #fff; font-weight: 500; }
+    .demo-label {
+      position: absolute;
+      right: -120px; top: 50%;
+      transform: translateY(-50%);
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .demo-label::before {
+      content: '';
+      display: block;
+      width: 40px; height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Section ── */
+    section {
+      padding: 120px 60px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .section-tag {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--orange);
+      margin-bottom: 20px;
+    }
+    .section-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(42px, 6vw, 72px);
+      line-height: 1;
+      letter-spacing: 2px;
+      margin-bottom: 20px;
+    }
+    .section-sub {
+      font-size: 16px;
+      color: var(--muted);
+      line-height: 1.8;
+      max-width: 500px;
+    }
+
+    /* ── Features grid ── */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      margin-top: 64px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .feature {
+      background: var(--bg2);
+      padding: 40px 32px;
+      border-right: 2px solid var(--border);
+      border-bottom: 2px solid var(--border);
+      transition: background 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .feature:nth-child(3n) { border-right: none; }
+    .feature:nth-last-child(-n+3) { border-bottom: none; }
+    .feature:hover { background: var(--bg3); }
+    .feature:hover .feat-icon { color: var(--orange); }
+    .feat-icon {
+      font-size: 28px;
+      margin-bottom: 20px;
+      transition: color 0.2s;
+      display: block;
+    }
+    .feat-title {
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+      color: var(--text);
+    }
+    .feat-desc {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    /* ── How it works ── */
+    .how-section {
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 120px 60px;
+    }
+    .how-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 40px;
+      margin-top: 64px;
+      counter-reset: steps;
+    }
+    .step { counter-increment: steps; }
+    .step-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 64px;
+      color: var(--border);
+      line-height: 1;
+      margin-bottom: 16px;
+      position: relative;
+    }
+    .step-num::after {
+      content: counter(steps, decimal-leading-zero);
+    }
+    .step:hover .step-num { color: var(--orange); transition: color 0.2s; }
+    .step-title {
+      font-size: 15px;
+      font-weight: 500;
+      margin-bottom: 10px;
+      color: var(--text);
+    }
+    .step-desc { font-size: 13px; color: var(--muted); line-height: 1.7; }
+
+    /* ── Download section ── */
+    .download-section {
+      text-align: center;
+      padding: 140px 40px;
+      position: relative;
+      overflow: hidden;
+    }
+    .download-section::before {
+      content: '';
+      position: absolute;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(255,107,26,0.06) 0%, transparent 70%);
+      top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      pointer-events: none;
+    }
+    .download-section .section-title { font-size: clamp(52px, 8vw, 100px); }
+    .platform-note {
+      margin-top: 16px;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 2px;
+    }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 60px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    footer .logo { font-size: 20px; }
+
+    /* ── Animations ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
+
+    @media (max-width: 768px) {
+      nav { padding: 20px 24px; }
+      .nav-links { display: none; }
+      section { padding: 80px 24px; }
+      .features { grid-template-columns: 1fr; }
+      .steps { grid-template-columns: repeat(2, 1fr); }
+      .demo-bar-inner { min-width: unset; width: 90vw; }
+      .demo-label { display: none; }
+      footer { flex-direction: column; gap: 16px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="cursor" id="cursor"></div>
+  <div class="cursor-ring" id="cursorRing"></div>
+
+  <!-- NAV -->
+  <nav id="nav">
+    <div class="logo">Lyri<span>Cast</span></div>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="#download" class="nav-cta">Download Free</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <div class="hero">
+    <p class="hero-tag">Windows Desktop App · Free · No Account Needed</p>
+    <h1>Lyrics<em>That Float</em></h1>
+    <p class="hero-sub">
+      LyriCast overlays <strong>real-time synced lyrics</strong> over your screen —
+      translucent, always on top, never in your way.
+      Just play a song on Spotify and watch the words appear.
+    </p>
+    <div class="hero-actions">
+      <a href="#download" class="btn-primary">
+        ⬇ Download for Windows
+      </a>
+      <a href="#how" class="btn-secondary">
+        See how it works →
+      </a>
+    </div>
+
+    <!-- Animated demo bar -->
+    <div class="demo-bar">
+      <div class="demo-bar-inner">
+        <div class="demo-line" id="line-prev">I used to be so strong</div>
+        <div class="demo-line active" id="line-curr">Hush little baby, don't you cry</div>
+        <div class="demo-line" id="line-next">Everything's gonna be alright</div>
+      </div>
+      <div class="demo-label">Live overlay preview</div>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <section id="features">
+    <p class="section-tag reveal">What it does</p>
+    <h2 class="section-title reveal">Built for<br>focus.</h2>
+    <p class="section-sub reveal">Every feature is designed so the lyrics enhance your experience — never distract from your work.</p>
+
+    <div class="features reveal">
+      <div class="feature">
+        <span class="feat-icon">🎵</span>
+        <div class="feat-title">Auto-detects your song</div>
+        <div class="feat-desc">Reads directly from the Spotify desktop app. No logins, no API keys, no setup hassle.</div>
+      </div>
+      <div class="feature">
+        <span class="feat-icon">⏱</span>
+        <div class="feat-title">Synced lyrics</div>
+        <div class="feat-desc">Karaoke-style timing — the current line is highlighted and scrolls in real time with the music.</div>
+      </div>
+      <div class="feature">
+        <span class="feat-icon">👆</span>
+        <div class="feat-title">Click-through mode</div>
+        <div class="feat-desc">Double-click the overlay to make it fully transparent to mouse clicks. Work normally underneath.</div>
+      </div>
+      <div class="feature">
+        <span class="feat-icon">🎨</span>
+        <div class="feat-title">Fully customizable</div>
+        <div class="feat-desc">Change font, colors, opacity, size and position to match your setup and taste perfectly.</div>
+      </div>
+      <div class="feature">
+        <span class="feat-icon">🔁</span>
+        <div class="feat-title">Self-correcting sync</div>
+        <div class="feat-desc">If lyrics drift out of sync, LyriCast automatically detects and corrects it — no manual intervention needed.</div>
+      </div>
+      <div class="feature">
+        <span class="feat-icon">🪟</span>
+        <div class="feat-title">Always on top</div>
+        <div class="feat-desc">Floats above every window — your browser, code editor, documents — without stealing focus.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <div class="how-section" id="how">
+    <div class="how-inner">
+      <p class="section-tag reveal">Simple setup</p>
+      <h2 class="section-title reveal">Up and running<br>in 60 seconds.</h2>
+      <p class="section-sub reveal">No accounts. No subscriptions. No configuration required.</p>
+
+      <div class="steps">
+        <div class="step reveal">
+          <div class="step-num"></div>
+          <div class="step-title">Download LyriCast</div>
+          <div class="step-desc">Grab the free installer below. One file, no bloatware.</div>
+        </div>
+        <div class="step reveal">
+          <div class="step-num"></div>
+          <div class="step-title">Run the installer</div>
+          <div class="step-desc">Double-click and follow the setup wizard. Takes about 30 seconds.</div>
+        </div>
+        <div class="step reveal">
+          <div class="step-num"></div>
+          <div class="step-title">Open Spotify</div>
+          <div class="step-desc">Play any song. LyriCast detects it automatically — no pairing needed.</div>
+        </div>
+        <div class="step reveal">
+          <div class="step-num"></div>
+          <div class="step-title">Enjoy the float</div>
+          <div class="step-desc">Lyrics appear on your screen. Double-click to enable click-through and get back to work.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DOWNLOAD -->
+  <div class="download-section" id="download">
+    <p class="section-tag reveal">Free download</p>
+    <h2 class="section-title reveal">Get<br>LyriCast.</h2>
+    <br>
+    <a href="#" class="btn-primary reveal" style="display:inline-flex; margin-top: 16px; font-size:17px; padding: 20px 44px;">
+      ⬇ &nbsp; Download for Windows
+    </a>
+    <p class="platform-note reveal" style="margin-top: 24px;">Windows 10 / 11 · Free forever · No account needed</p>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="logo">Lyri<span>Cast</span></div>
+    <div>Made with 🎵 — Lyrics powered by lrclib.net</div>
+    <div>© Valerius Kigen 2025 LyriCast</div>
+  </footer>
+
+  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+    // ── Custom cursor ──
+    const cursor = document.getElementById('cursor');
+    const ring   = document.getElementById('cursorRing');
+    let mx = 0, my = 0, rx = 0, ry = 0;
+
+    document.addEventListener('mousemove', e => {
+      mx = e.clientX; my = e.clientY;
+      cursor.style.left = mx - 5  + 'px';
+      cursor.style.top  = my - 5  + 'px';
+    });
+
+    // Ring follows with slight lag
+    function animateRing() {
+      rx += (mx - rx - 18) * 0.12;
+      ry += (my - ry - 18) * 0.12;
+      ring.style.left = rx + 'px';
+      ring.style.top  = ry + 'px';
+      requestAnimationFrame(animateRing);
+    }
+    animateRing();
+
+    document.querySelectorAll('a, button').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        ring.style.width  = '56px';
+        ring.style.height = '56px';
+        ring.style.opacity = '0.7';
+        cursor.style.transform = 'scale(1.5)';
+      });
+      el.addEventListener('mouseleave', () => {
+        ring.style.width  = '36px';
+        ring.style.height = '36px';
+        ring.style.opacity = '0.4';
+        cursor.style.transform = 'scale(1)';
+      });
+    });
+
+    // ── Nav scroll effect ──
+    window.addEventListener('scroll', () => {
+      document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 40);
+    });
+
+    // ── Scroll reveal ──
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) e.target.classList.add('visible');
+      });
+    }, { threshold: 0.15 });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    // ── Animated demo lyrics ──
+    const lyrics = [
+      ["I used to be so strong",       "Hush little baby, don't you cry",       "Everything's gonna be alright"],
+      ["Don't you cry",                 "Everything's gonna be alright",          "Stiffen that upper lip up little lady"],
+      ["Everything's gonna be alright", "Stiffen that upper lip up little lady",  "I told you Daddy's here to hold you"],
+      ["Stiffen that upper lip",        "I told you Daddy's here to hold you",    "Through the night"],
+      ["I told you Daddy's here",       "Through the night",                      "I know Mommy's not here right now"],
+    ];
+
+    let lyrIdx = 0;
+    const prev = document.getElementById('line-prev');
+    const curr = document.getElementById('line-curr');
+    const next = document.getElementById('line-next');
+
+    setInterval(() => {
+      lyrIdx = (lyrIdx + 1) % lyrics.length;
+      prev.style.opacity = '0';
+      curr.style.opacity = '0';
+      next.style.opacity = '0';
+      setTimeout(() => {
+        prev.textContent = lyrics[lyrIdx][0];
+        curr.textContent = lyrics[lyrIdx][1];
+        next.textContent = lyrics[lyrIdx][2];
+        prev.style.opacity = '1';
+        curr.style.
