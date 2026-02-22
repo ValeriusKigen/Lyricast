@@ -420,6 +420,10 @@
       opacity: 1;
       transform: translateY(0);
     }
+    /* Fallback: show everything if JS fails */
+    @media (prefers-reduced-motion: reduce) {
+      .reveal { opacity: 1; transform: none; }
+    }
 
     /* ── Scrollbar ── */
     ::-webkit-scrollbar { width: 4px; }
@@ -619,9 +623,14 @@
       entries.forEach(e => {
         if (e.isIntersecting) e.target.classList.add('visible');
       });
-    }, { threshold: 0.15 });
+    }, { threshold: 0.05, rootMargin: "0px 0px -50px 0px" });
 
     document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    // Safety net: reveal all elements after 1.5s regardless
+    setTimeout(() => {
+      document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
+    }, 1500);
 
     // ── Animated demo lyrics ──
     const lyrics = [
